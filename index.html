@@ -77,11 +77,22 @@
     </div>
 
     <div id="quizResultsView" class="hidden view-container">
-        <h2>Quiz Complete!</h2>
-        <p class="timer-text" id="finalTimeText">Time: 00:00</p>
-        <h1 id="scoreDisplay" class="score-text">0%</h1>
-        <p class="review-text">Review your incorrect answers below:</p>
-        <div id="wrongAnswersContainer" class="content-grow result-scroll"></div>
+        
+        <div class="content-grow result-scroll" style="padding-top: 20px;">
+            <div class="stats-container">
+                <div class="stat-group">
+                    <div class="stat-label">time</div>
+                    <div class="stat-value" id="finalTimeText">00:00</div>
+                </div>
+                <div class="stat-group">
+                    <div class="stat-label">acc</div>
+                    <div class="stat-value" id="scoreDisplay">0%</div>
+                </div>
+            </div>
+
+            <div class="stat-label" style="margin-top: 40px; margin-bottom: 15px;">week breakdown</div>
+            <div id="weekStatsContainer" class="week-stats-row"></div> 
+        </div>
         
         <div class="nav-buttons">
             <button class="action-btn btn-primary" id="backFromResultsBtn" style="width: 100%;">Return to Home</button>

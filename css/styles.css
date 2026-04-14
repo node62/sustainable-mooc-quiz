@@ -112,7 +112,7 @@ h2 { text-align: center; margin-bottom: 15px; font-size: 1.2rem; }
     background-color: rgba(239, 68, 68, 0.1); border-color: var(--accent-red); color: var(--accent-red);
 }
 
-/* Hub Settings (Randomize Checkbox) */
+/* Hub Settings */
 .hub-settings {
     display: flex;
     justify-content: center;
@@ -192,7 +192,7 @@ h2 { text-align: center; margin-bottom: 15px; font-size: 1.2rem; }
     opacity: 0.7;
 }
 
-/* Top Bars (Timers, Progress) */
+/* Top Bars */
 .top-bar {
     display: flex; justify-content: space-between; align-items: center;
     margin-bottom: 15px; color: var(--text-secondary); font-weight: bold;
@@ -213,33 +213,18 @@ h2 { text-align: center; margin-bottom: 15px; font-size: 1.2rem; }
     border-radius: var(--border-radius); margin-bottom: 20px;
 }
 
-/* NEW: Flexbox header to handle the tag and text wrapping */
 .question-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    gap: 15px; /* Visual buffer so text wraps before touching tag */
-    margin-bottom: 20px;
+    display: flex; justify-content: space-between; align-items: flex-start;
+    gap: 15px; margin-bottom: 20px;
 }
 
 .question-text { font-size: 1.1rem; line-height: 1.5; font-weight: 500; margin-bottom: 20px;}
+.question-header .question-text { margin-bottom: 0; flex: 1; }
 
-.question-header .question-text {
-    margin-bottom: 0; /* Prevents double margin when inside the header */
-    flex: 1; /* Lets text take up available space naturally */
-}
-
-/* UPDATED: Retry Badge */
 .retry-tag {
-    background-color: var(--accent-red);
-    color: #fff;
-    font-size: 0.8rem;
-    padding: 4px 8px;
-    border-radius: 6px;
-    font-weight: bold;
-    letter-spacing: 1px;
-    flex-shrink: 0; /* Forces the browser to NEVER squish the tag */
-    margin-top: 2px; /* Slight nudge to align it with top line of text */
+    background-color: var(--accent-red); color: #fff; font-size: 0.8rem;
+    padding: 4px 8px; border-radius: 6px; font-weight: bold; letter-spacing: 1px;
+    flex-shrink: 0; margin-top: 2px;
 }
 
 .option {
@@ -249,20 +234,78 @@ h2 { text-align: center; margin-bottom: 15px; font-size: 1.2rem; }
     box-sizing: border-box;
 }
 
-/* Study Mode Colors */
 .option.study-correct { border-color: var(--accent-green); background-color: rgba(16, 185, 129, 0.15); }
-
-/* Quiz Mode Colors */
 .options-container.quiz-active .option:hover { background-color: #383838; }
 .options-container.locked { pointer-events: none; }
 .option.quiz-correct { border-color: var(--accent-green); background-color: rgba(16, 185, 129, 0.2); }
 .option.quiz-wrong { border-color: var(--accent-red); background-color: rgba(239, 68, 68, 0.2); }
 
-/* Utility */
 .locked-hidden { opacity: 0; pointer-events: none; } 
 .hidden { display: none !important; }
 .invisible { visibility: hidden; } 
 
-/* Results */
-.score-text { color: var(--accent-green); font-size: 3rem; text-align: center; margin: 10px 0; }
-.review-text { text-align: center; color: var(--text-secondary); margin-bottom: 20px;}
+/* Results (Monkeytype Style) */
+.stats-container {
+    display: flex;
+    flex-direction: column;
+    gap: 30px;
+}
+
+.stat-group {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+}
+
+.stat-label {
+    font-size: 1.2rem;
+    color: #646669; 
+    font-family: monospace;
+    margin-bottom: 5px;
+}
+
+.stat-value {
+    font-size: 4.5rem; 
+    color: #d1d0c5; 
+    font-family: monospace;
+    line-height: 1;
+}
+
+/* NEW: Fixes the weird bloated percentage sign */
+.percent-sign {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    font-size: 0.7em; 
+    margin-left: 2px;
+}
+
+/* Week Stats */
+.week-stats-row { 
+    display: flex; 
+    flex-wrap: wrap; 
+    gap: 12px; 
+    justify-content: flex-start; 
+}
+
+.week-stat-card {
+    background-color: var(--surface-color);
+    border: 2px solid #333;
+    border-radius: 8px;
+    padding: 12px 18px;
+    min-width: 95px; /* Widened slightly for 'Week X' */
+    text-align: center;
+}
+
+/* Muted Greyish-Red for below 70% */
+.week-stat-card.needs-review { 
+    border-color: rgba(239, 68, 68, 0.4); 
+    background-color: rgba(239, 68, 68, 0.12); 
+}
+
+/* Muted Greyish-Green for 100% */
+.week-stat-card.perfect { 
+    border-color: rgba(16, 185, 129, 0.4); 
+    background-color: rgba(16, 185, 129, 0.12); 
+}
+
+.week-stat-title { font-size: 0.95rem; color: var(--text-secondary); font-family: monospace; margin-bottom: 5px; }
+.week-stat-score { font-size: 1.4rem; font-weight: bold; color: var(--text-primary); font-family: monospace;}

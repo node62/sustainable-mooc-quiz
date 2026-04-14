@@ -11,14 +11,14 @@ let currentStudyWeek = null;
 let quizWeeksSelected = new Set();
 let quizQueue = [];
 let quizIndex = 0;
-let quizScore = 0;
-let wrongAnswers = [];
 let timerInterval = null;
 let secondsElapsed = 0;
 
-// Retry Tracking State
+// Retry & Accuracy Tracking State
 let originalQuizLength = 0;
 let wrongCount = 0;
+let totalAttempts = 0; 
+let weekStats = {}; // Tracks breakdown per week
 
 // DOM Elements
 const mainHeader = document.getElementById('mainHeader'); 
@@ -253,10 +253,18 @@ function startQuiz() {
     }));
 
     quizIndex = 0;
-    quizScore = 0;
-    wrongAnswers = [];
     wrongCount = 0;
+    totalAttempts = 0; 
     originalQuizLength = quizQueue.length;
+    
+    // Initialize the week stats tracker
+    weekStats = {};
+    quizQueue.forEach(q => {
+        if (!weekStats[q.week]) {
+            weekStats[q.week] = { total: 0, correct: 0 };
+        }
+        weekStats[q.week].total++;
+    });
     
     segmentContainer.innerHTML = '';
     for(let i=0; i<originalQuizLength; i++) {
@@ -287,9 +295,10 @@ function renderQuizQuestion() {
     nextBtn.classList.add('locked-hidden'); 
     nextBtn.innerText = quizIndex === quizQueue.length - 1 ? 'Finish Quiz' : 'NEXT';
 
+    let retryBadge = q.isRetry ? `<span class="retry-tag">RETRY</span>` : '';
+
     const container = document.getElementById('quizQuestionContainer');
     
-    // NEW: Inject the flexbox header structure if it's a retry question
     if (q.isRetry) {
         container.innerHTML = `
             <div class="question-card">
@@ -324,6 +333,8 @@ function handleQuizSelection(selectedDiv, selectedText, correctAnswer) {
     optsContainer.classList.remove('quiz-active');
     optsContainer.classList.add('locked');
 
+    totalAttempts++;
+
     const currentQ = quizQueue[quizIndex];
     const seg = document.getElementById(`segment-${currentQ.originalIndex}`);
 
@@ -334,7 +345,7 @@ function handleQuizSelection(selectedDiv, selectedText, correctAnswer) {
         seg.classList.add('correct');
         
         if (!currentQ.isRetry) {
-            quizScore++;
+            weekStats[currentQ.week].correct++;
         }
         
         setTimeout(() => {
@@ -352,14 +363,6 @@ function handleQuizSelection(selectedDiv, selectedText, correctAnswer) {
                 child.classList.add('quiz-correct');
             }
         });
-        
-        if (!currentQ.isRetry) {
-            wrongAnswers.push({
-                question: currentQ.question,
-                userAnswer: selectedText,
-                correctAnswer: correctAnswer
-            });
-        }
 
         quizQueue.push({
             ...currentQ,
@@ -387,27 +390,34 @@ function showQuizResults() {
     document.getElementById('quizActiveView').classList.add('hidden');
     document.getElementById('quizResultsView').classList.remove('hidden');
 
-    const percentage = Math.round((quizScore / originalQuizLength) * 100);
-    document.getElementById('scoreDisplay').innerText = `${percentage}% (${quizScore}/${originalQuizLength})`;
-    document.getElementById('finalTimeText').innerText = `Time taken: ${formatTime(secondsElapsed)}`;
+    const percentage = Math.round((originalQuizLength / totalAttempts) * 100);
+    
+    // Set Monkeytype style numbers with the clean percent sign span
+    document.getElementById('scoreDisplay').innerHTML = `${percentage}<span class="percent-sign">%</span>`;
+    document.getElementById('finalTimeText').innerText = formatTime(secondsElapsed);
 
-    const container = document.getElementById('wrongAnswersContainer');
-    container.innerHTML = '';
+    // Build the Week Stats Breakdown Cards
+    const statsContainer = document.getElementById('weekStatsContainer');
+    statsContainer.innerHTML = '';
+    
+    const sortedWeeks = Object.keys(weekStats).sort((a, b) => Number(a) - Number(b));
+    
+    sortedWeeks.forEach(week => {
+        const stats = weekStats[week];
+        const weekPercentage = stats.total > 0 ? (stats.correct / stats.total) * 100 : 0;
+        
+        let cardClass = 'week-stat-card';
+        if (weekPercentage < 70) cardClass += ' needs-review';
+        if (weekPercentage === 100) cardClass += ' perfect';
 
-    if (wrongAnswers.length === 0) {
-        container.innerHTML = '<p class="review-text" style="color: var(--accent-green);">Perfect score! Great job.</p>';
-    } else {
-        wrongAnswers.forEach(wa => {
-            const card = document.createElement('div');
-            card.className = 'question-card';
-            card.innerHTML = `
-                <div class="question-text">${wa.question}</div>
-                <div class="option quiz-wrong"><strong>You chose:</strong> ${wa.userAnswer}</div>
-                <div class="option quiz-correct"><strong>Correct answer:</strong> ${wa.correctAnswer}</div>
-            `;
-            container.appendChild(card);
-        });
-    }
+        const card = document.createElement('div');
+        card.className = cardClass;
+        card.innerHTML = `
+            <div class="week-stat-title">Week ${week}</div>
+            <div class="week-stat-score">${stats.correct}/${stats.total}</div>
+        `;
+        statsContainer.appendChild(card);
+    });
 }
 
 init();
