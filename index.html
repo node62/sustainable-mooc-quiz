@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sustainable Development Quiz</title>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+<div id="app">
+    <h1 class="main-title">Education for Sustainable Development</h1>
+
+    <div id="mainHeader" class="header-container">
+        <div class="pill-toggle">
+            <input type="radio" id="toggleStudy" name="modeToggle" value="study" checked>
+            <label for="toggleStudy">Study</label>
+            
+            <input type="radio" id="toggleQuiz" name="modeToggle" value="quiz">
+            <label for="toggleQuiz">Quiz</label>
+            
+            <div class="slider"></div>
+        </div>
+    </div>
+
+    <div id="hubView" class="view-container hub-layout">
+        <h2 id="hubInstructions">Select a week to study:</h2>
+        
+        <div class="grid" id="weekGrid">
+            </div>
+
+        <div class="hub-settings">
+            <label class="custom-checkbox">
+                <input type="checkbox" id="sharedRandomizeCheck">
+                Randomize Questions
+            </label>
+        </div>
+
+        <div id="quizStartContainer" class="hidden">
+            <button class="action-btn btn-primary" id="startQuizBtn" disabled>Start Quiz</button>
+        </div>
+    </div>
+
+    <div id="studyActiveView" class="hidden view-container">
+        <div class="top-bar">
+            <button class="icon-btn back-btn" id="studyHomeBtn">← Back</button>
+            <span class="progress-text" id="studyProgressText">Week 1 - Q 1/10</span>
+        </div>
+        
+        <div id="studyQuestionContainer" class="content-grow"></div>
+        
+        <div class="nav-buttons" id="studyNavButtons">
+            <button class="action-btn btn-secondary" id="studyPrevBtn">PREV</button>
+            <button class="action-btn btn-primary" id="studyNextBtn">NEXT</button>
+        </div>
+
+        <div class="nav-buttons hidden" id="studyFinishButtons">
+            <button class="action-btn btn-secondary" id="studyRestartBtn">Restart</button>
+            <button class="action-btn btn-orange" id="studyNextWeekBtn">Next Week</button>
+        </div>
+    </div>
+
+    <div id="quizActiveView" class="hidden view-container">
+        <div class="top-bar">
+            <button class="icon-btn back-btn" id="quizHomeBtn">← Back</button>
+            <span class="progress-text" id="quizProgressText">Q 1/10</span>
+            <span class="timer-text" id="quizTimerText">00:00</span>
+        </div>
+        
+        <div id="quizSegmentedProgress" class="segmented-progress"></div>
+        
+        <div id="quizQuestionContainer" class="content-grow"></div>
+        
+        <div class="nav-buttons">
+            <button class="action-btn btn-primary locked-hidden" id="quizNextBtn" style="width: 100%;">NEXT</button>
+        </div>
+    </div>
+
+    <div id="quizResultsView" class="hidden view-container">
+        <h2>Quiz Complete!</h2>
+        <p class="timer-text" id="finalTimeText">Time: 00:00</p>
+        <h1 id="scoreDisplay" class="score-text">0%</h1>
+        <p class="review-text">Review your incorrect answers below:</p>
+        <div id="wrongAnswersContainer" class="content-grow result-scroll"></div>
+        
+        <div class="nav-buttons">
+            <button class="action-btn btn-primary" id="backFromResultsBtn" style="width: 100%;">Return to Home</button>
+        </div>
+    </div>
+
+</div>
+
+<script src="js/script.js"></script>
+</body>
+</html>
