@@ -65,8 +65,65 @@ function setupEventListeners() {
 
     document.getElementById('quizNextBtn').addEventListener('click', processQuizNext);
 
-    // Bulletproof Keyboard Navigation Listener
     document.addEventListener('keydown', handleKeyboardNavigation);
+}
+
+// --- OPTION SHUFFLING LOGIC (ADVANCED PINNING) ---
+function getSmartShuffledOptions(options) {
+    // 1. Absolute Danger: References to specific letters. Shuffling breaks these completely.
+    const absoluteDangerPhrases = ["both a", "both b", "a and b", "b and c", "a & b", "neither a", "only a"];
+    
+    // 2. Collective Danger: References to the whole group ("All", "None"). These are safe to pin.
+    const collectiveDangerPhrases = ["all of", "none of"];
+
+    // Clean all options for checking
+    const lowerOptions = options.map(opt => String(opt).toLowerCase().replace(/[.,;]$/, "").trim());
+
+    // Check for Absolute Danger first. If found, abort shuffle entirely.
+    const hasAbsoluteDanger = lowerOptions.some(cleanOpt => 
+        absoluteDangerPhrases.some(phrase => cleanOpt.includes(phrase))
+    );
+
+    if (hasAbsoluteDanger) {
+        return [...options]; 
+    }
+
+    // If safe to do a partial shuffle, separate the pinned options from the shufflable ones
+    let fixedPositions = [];
+    let shufflableOptions = [];
+
+    options.forEach((opt, index) => {
+        const cleanOpt = lowerOptions[index];
+        const isCollectiveDanger = (cleanOpt === "all" || cleanOpt === "none" || cleanOpt === "both") ||
+                                   collectiveDangerPhrases.some(phrase => cleanOpt.includes(phrase));
+
+        if (isCollectiveDanger) {
+            // Save exactly where this option is supposed to be
+            fixedPositions.push({ index: index, text: opt });
+        } else {
+            // Toss it into the random pile
+            shufflableOptions.push(opt);
+        }
+    });
+
+    // Shuffle the safe options
+    shufflableOptions.sort(() => Math.random() - 0.5);
+
+    // Reconstruct the array: put the pinned items back, and fill the gaps with shuffled items
+    let result = [];
+    let shuffleIndex = 0;
+    
+    for (let i = 0; i < options.length; i++) {
+        let fixedOpt = fixedPositions.find(f => f.index === i);
+        if (fixedOpt) {
+            result.push(fixedOpt.text); // Put the pinned item back in its exact original slot
+        } else {
+            result.push(shufflableOptions[shuffleIndex]); // Drop in a random item
+            shuffleIndex++;
+        }
+    }
+
+    return result;
 }
 
 // --- KEYBOARD LOGIC ---
@@ -74,13 +131,12 @@ function handleKeyboardNavigation(e) {
     const isStudyActive = !document.getElementById('studyActiveView').classList.contains('hidden');
     const isQuizActive = !document.getElementById('quizActiveView').classList.contains('hidden');
 
-    // Using e.code is universally safer than e.key for spacebars
     const isNext = e.code === 'Space' || e.key === ' ' || e.code === 'ArrowRight' || e.key === 'ArrowRight';
     const isPrev = e.code === 'ArrowLeft' || e.key === 'ArrowLeft';
 
     if (isStudyActive) {
         if (isNext) {
-            e.preventDefault(); // Stop spacebar from scrolling down
+            e.preventDefault(); 
             if (studyIndex < studyQueue.length - 1) {
                 document.getElementById('studyNextBtn').click();
             } else {
@@ -95,7 +151,6 @@ function handleKeyboardNavigation(e) {
     } else if (isQuizActive) {
         if (isNext) {
             const nextBtn = document.getElementById('quizNextBtn');
-            // Only simulate the click if the button is actually visible to the user
             if (!nextBtn.classList.contains('locked-hidden')) {
                 e.preventDefault();
                 nextBtn.click();
@@ -207,7 +262,10 @@ function renderStudyQuestion(index) {
     `;
 
     const optsContainer = document.getElementById('studyOptions');
-    q.options.forEach(opt => {
+    
+    const displayOptions = getSmartShuffledOptions(q.options);
+    
+    displayOptions.forEach(opt => {
         const isCorrect = opt === q.answer;
         const btn = document.createElement('div');
         btn.className = `option ${isCorrect ? 'study-correct' : ''}`;
@@ -356,7 +414,10 @@ function renderQuizQuestion() {
     }
 
     const optsContainer = document.getElementById('quizOptions');
-    q.options.forEach(opt => {
+    
+    const displayOptions = getSmartShuffledOptions(q.options);
+    
+    displayOptions.forEach(opt => {
         const btn = document.createElement('div');
         btn.className = 'option';
         btn.innerText = opt;
@@ -401,10 +462,26 @@ function handleQuizSelection(selectedDiv, selectedText, correctAnswer) {
             }
         });
 
-        quizQueue.push({
+        const retryQuestion = {
             ...currentQ,
             isRetry: true
-        });
+        };
+
+        // NEW: Shuffle the retry questions at the end of the deck
+        if (sharedRandomizeCheck.checked) {
+            // Find where the retries start (either the next question or the end of the original deck)
+            const retryStartIndex = Math.max(quizIndex + 1, originalQuizLength);
+            
+            // Pick a random spot in the retry section
+            const randomInsertIndex = Math.floor(Math.random() * (quizQueue.length - retryStartIndex + 1)) + retryStartIndex;
+            
+            // Sneak the question into that random spot
+            quizQueue.splice(randomInsertIndex, 0, retryQuestion);
+        } else {
+            // If randomize is unchecked, just stick it at the very end
+            quizQueue.push(retryQuestion);
+        }
+        
         wrongCount++;
 
         const nextBtn = document.getElementById('quizNextBtn');
