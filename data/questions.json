@@ -163,10 +163,10 @@
     {
         "question": "Extreme poverty means living on less than ___ a day.",
         "options": [
-            "$1.25",
-            "$4.25",
-            "$10.25",
-            "$100.25"
+            "$ 1.25",
+            "$ 4.25",
+            "$ 10.25",
+            "$ 100.25"
         ],
         "answer": "$$1.25",
         "week": 1
