@@ -18,7 +18,7 @@ let secondsElapsed = 0;
 let originalQuizLength = 0;
 let wrongCount = 0;
 let totalAttempts = 0; 
-let weekStats = {}; // Tracks breakdown per week
+let weekStats = {}; 
 
 // DOM Elements
 const mainHeader = document.getElementById('mainHeader'); 
@@ -64,6 +64,44 @@ function setupEventListeners() {
     document.getElementById('studyNextWeekBtn').addEventListener('click', jumpToNextWeek);
 
     document.getElementById('quizNextBtn').addEventListener('click', processQuizNext);
+
+    // Bulletproof Keyboard Navigation Listener
+    document.addEventListener('keydown', handleKeyboardNavigation);
+}
+
+// --- KEYBOARD LOGIC ---
+function handleKeyboardNavigation(e) {
+    const isStudyActive = !document.getElementById('studyActiveView').classList.contains('hidden');
+    const isQuizActive = !document.getElementById('quizActiveView').classList.contains('hidden');
+
+    // Using e.code is universally safer than e.key for spacebars
+    const isNext = e.code === 'Space' || e.key === ' ' || e.code === 'ArrowRight' || e.key === 'ArrowRight';
+    const isPrev = e.code === 'ArrowLeft' || e.key === 'ArrowLeft';
+
+    if (isStudyActive) {
+        if (isNext) {
+            e.preventDefault(); // Stop spacebar from scrolling down
+            if (studyIndex < studyQueue.length - 1) {
+                document.getElementById('studyNextBtn').click();
+            } else {
+                document.getElementById('studyNextWeekBtn').click();
+            }
+        } else if (isPrev) {
+            e.preventDefault();
+            if (studyIndex > 0) {
+                document.getElementById('studyPrevBtn').click();
+            }
+        }
+    } else if (isQuizActive) {
+        if (isNext) {
+            const nextBtn = document.getElementById('quizNextBtn');
+            // Only simulate the click if the button is actually visible to the user
+            if (!nextBtn.classList.contains('locked-hidden')) {
+                e.preventDefault();
+                nextBtn.click();
+            }
+        }
+    }
 }
 
 // --- HUB LOGIC ---
@@ -257,7 +295,6 @@ function startQuiz() {
     totalAttempts = 0; 
     originalQuizLength = quizQueue.length;
     
-    // Initialize the week stats tracker
     weekStats = {};
     quizQueue.forEach(q => {
         if (!weekStats[q.week]) {
@@ -392,11 +429,9 @@ function showQuizResults() {
 
     const percentage = Math.round((originalQuizLength / totalAttempts) * 100);
     
-    // Set Monkeytype style numbers with the clean percent sign span
     document.getElementById('scoreDisplay').innerHTML = `${percentage}<span class="percent-sign">%</span>`;
     document.getElementById('finalTimeText').innerText = formatTime(secondsElapsed);
 
-    // Build the Week Stats Breakdown Cards
     const statsContainer = document.getElementById('weekStatsContainer');
     statsContainer.innerHTML = '';
     
