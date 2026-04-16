@@ -22,8 +22,6 @@ body {
     height: 100vh;
     box-sizing: border-box;
     overflow-x: hidden;
-    
-    /* NEW: Prevent accidental text highlighting everywhere */
     -webkit-user-select: none; 
     user-select: none; 
 }
@@ -207,7 +205,6 @@ h2 { text-align: center; margin-bottom: 15px; font-size: 1.2rem; }
     flex-shrink: 0;
 }
 
-/* UPDATED: Polished Back Icon Button */
 .icon-btn { 
     background: transparent; 
     border: none; 
@@ -215,17 +212,17 @@ h2 { text-align: center; margin-bottom: 15px; font-size: 1.2rem; }
     font-size: 1rem; 
     font-weight: 600;
     cursor: pointer; 
-    padding: 6px 12px 6px 6px; /* Extra padding on right for balance */
+    padding: 6px 12px 6px 6px; 
     border-radius: 8px;
     display: flex;
     align-items: center;
     gap: 4px;
     transition: all 0.2s ease;
-    margin-left: -6px; /* Pulls it flush with the left edge of the container */
+    margin-left: -6px; 
 }
 .icon-btn:hover { 
     color: var(--text-primary); 
-    background-color: rgba(255, 255, 255, 0.08); /* Subtle grey pill highlight */
+    background-color: rgba(255, 255, 255, 0.08); 
 }
 
 .timer-text { font-family: monospace; font-size: 1.25rem; color: #fff; }
@@ -246,7 +243,6 @@ h2 { text-align: center; margin-bottom: 15px; font-size: 1.2rem; }
     gap: 15px; margin-bottom: 20px;
 }
 
-/* NEW: Re-enable text selection ONLY for questions and answers */
 .question-text { 
     font-size: 1.1rem; line-height: 1.5; font-weight: 500; margin-bottom: 20px;
     -webkit-user-select: text; 
@@ -351,4 +347,94 @@ h2 { text-align: center; margin-bottom: 15px; font-size: 1.2rem; }
 @keyframes slideInLeft {
     0% { opacity: 0; transform: translateX(-30px); }
     100% { opacity: 1; transform: translateX(0); }
+}
+
+/* --- RAW VIDEO EASTER EGG STYLES --- */
+#secretTriggerTitle {
+    cursor: pointer;
+    -webkit-user-select: none; 
+    user-select: none;
+    -webkit-tap-highlight-color: transparent; 
+}
+
+#easterEggContainer {
+    position: fixed; 
+    bottom: 20px; 
+    right: 20px;
+    /* Width is now handled dynamically by JS config! */
+    aspect-ratio: 9 / 16; 
+    background: #000;
+    border-radius: 8px;
+    box-shadow: 0 8px 25px rgba(0,0,0,0.6);
+    z-index: 999999; 
+    overflow: hidden;
+    cursor: grab;
+    border: 2px solid #333;
+}
+
+#easterEggContainer:active {
+    cursor: grabbing;
+}
+
+#brainrotVideo {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    pointer-events: none; 
+}
+
+#closeEasterEgg {
+    position: absolute;
+    top: 6px;
+    left: 6px;
+    background: rgba(0, 0, 0, 0.6);
+    color: #fff;
+    border: none;
+    border-radius: 50%;
+    width: 22px;
+    height: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 10px;
+    z-index: 10;
+    backdrop-filter: blur(4px);
+    transition: 0.2s;
+}
+
+#closeEasterEgg:hover {
+    background: rgba(239, 68, 68, 0.9);
+    transform: scale(1.1);
+}
+
+/* --- DYNAMIC JS TOAST NOTIFICATION --- */
+#dynamicToast {
+    position: fixed;
+    bottom: 40px;
+    left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: rgba(40, 40, 40, 0.95);
+    color: #eee;
+    padding: 12px 24px;
+    border-radius: 30px;
+    font-size: 0.95rem;
+    font-weight: bold;
+    z-index: 10000000; 
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    opacity: 0;
+    pointer-events: none;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+#dynamicToast.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+}
+
+/* --- KILL SWITCH FOR DESKTOP --- */
+@media (min-width: 769px) {
+    #easterEggContainer, #dynamicToast {
+        display: none !important;
+    }
 }

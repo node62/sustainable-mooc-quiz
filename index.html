@@ -9,7 +9,14 @@
 <body>
 
 <div id="app">
-    <h1 class="main-title">Education for Sustainable Development</h1>
+    <h1 id="secretTriggerTitle" class="main-title">Education for Sustainable Development</h1>
+
+    <div id="easterEggContainer" class="hidden">
+        <button id="closeEasterEgg">✖</button>
+        <video id="brainrotVideo" autoplay loop muted playsinline>
+            <source src="assets/subway-surfers.mp4" type="video/mp4">
+        </video>
+    </div>
 
     <div id="mainHeader" class="header-container">
         <div class="pill-toggle">
@@ -26,8 +33,7 @@
     <div id="hubView" class="view-container hub-layout">
         <h2 id="hubInstructions">Select a week to study:</h2>
         
-        <div class="grid" id="weekGrid">
-            </div>
+        <div class="grid" id="weekGrid"></div>
 
         <div class="hub-settings">
             <label class="custom-checkbox">
@@ -83,7 +89,6 @@
     </div>
 
     <div id="quizResultsView" class="hidden view-container">
-        
         <div class="content-grow result-scroll" style="padding-top: 20px;">
             <div class="stats-container">
                 <div class="stat-group">

@@ -1,5 +1,8 @@
 // --- DEVELOPER TOGGLES ---
-const ENABLE_MOBILE_SWIPE = true; // Set to false to disable swipe gestures in study mode
+const ENABLE_MOBILE_SWIPE = true; 
+const ENABLE_EASTER_EGG = true; // MASTER TOGGLE: Set to false to disable the entire feature completely
+const DISABLE_SCROLL_ON_DRAG = true; 
+const VIDEO_SIZE_DIVISOR = 3; 
 
 // Data & State
 let rawData = [];
@@ -28,6 +31,10 @@ let weekStats = {};
 let touchstartX = 0;
 let touchendX = 0;
 
+// Easter Egg State
+let titleClickCount = 0;
+let titleClickTimer = null;
+
 // DOM Elements
 const mainHeader = document.getElementById('mainHeader'); 
 const modeRadios = document.getElementsByName('modeToggle');
@@ -47,6 +54,7 @@ async function init() {
         rawData = await response.json();
         setupEventListeners();
         renderGrid();
+        if (ENABLE_EASTER_EGG) initEasterEgg(); 
     } catch (error) {
         weekGrid.innerHTML = '<p style="color:red; grid-column: 1/-1;">Error loading data. Run a local web server.</p>';
     }
@@ -82,7 +90,6 @@ function setupEventListeners() {
 
     document.addEventListener('keydown', handleKeyboardNavigation);
 
-    // Mobile Swipe Listeners
     const studyView = document.getElementById('studyActiveView');
     studyView.addEventListener('touchstart', e => {
         touchstartX = e.changedTouches[0].screenX;
@@ -92,27 +99,149 @@ function setupEventListeners() {
         touchendX = e.changedTouches[0].screenX;
         handleSwipeGesture();
     }, {passive: true});
+
+    // --- EASTER EGG RAPID CLICK LISTENER ---
+    document.getElementById('secretTriggerTitle').addEventListener('click', () => {
+        if (!ENABLE_EASTER_EGG) return; // Master Lock
+        if (window.innerWidth > 768) return; // Desktop Lock
+
+        titleClickCount++;
+        clearTimeout(titleClickTimer); 
+        
+        if (titleClickCount >= 10) {
+            activateBrainrot();
+            titleClickCount = 0; 
+        } else {
+            titleClickTimer = setTimeout(() => { titleClickCount = 0; }, 2000); 
+        }
+    });
+
+    document.getElementById('closeEasterEgg').addEventListener('click', (e) => {
+        e.stopPropagation(); 
+        const egg = document.getElementById('easterEggContainer');
+        const vid = document.getElementById('brainrotVideo');
+        egg.classList.add('hidden');
+        vid.pause(); 
+    });
+}
+
+// --- EASTER EGG LOGIC ---
+function showToast(message) {
+    // 1. Destroy any existing toast so they don't stack
+    const existingToast = document.getElementById('dynamicToast');
+    if (existingToast) existingToast.remove();
+
+    // 2. Create the element purely in JavaScript
+    const toast = document.createElement('div');
+    toast.id = 'dynamicToast';
+    toast.innerText = message;
+    
+    // 3. Attach it to the body (outside the #app layout)
+    document.body.appendChild(toast);
+
+    // 4. Force browser reflow to ensure the CSS animation triggers
+    void toast.offsetWidth;
+    toast.classList.add('show');
+    
+    // 5. Clean it up automatically after 3 seconds
+    setTimeout(() => {
+        toast.classList.remove('show');
+        setTimeout(() => toast.remove(), 300); // Wait for fade-out before deleting
+    }, 3000);
+}
+
+function activateBrainrot() {
+    const egg = document.getElementById('easterEggContainer');
+    const vid = document.getElementById('brainrotVideo');
+    
+    if (!egg.classList.contains('hidden')) return;
+
+    showToast("Brainrot mode!");
+    egg.classList.remove('hidden');
+    vid.play(); 
+}
+
+function initEasterEgg() {
+    const elmnt = document.getElementById("easterEggContainer");
+    
+    elmnt.style.width = `calc(100vw / ${VIDEO_SIZE_DIVISOR})`;
+    
+    let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
+    
+    elmnt.onmousedown = dragMouseDown;
+    elmnt.ontouchstart = dragMouseDown;
+
+    function dragMouseDown(e) {
+        e = e || window.event;
+        if (e.target.id === 'closeEasterEgg') return; 
+        
+        if (DISABLE_SCROLL_ON_DRAG) {
+            document.body.style.overflow = 'hidden';
+            document.body.style.touchAction = 'none';
+        }
+
+        if (e.type === 'touchstart') {
+            pos3 = e.touches[0].clientX;
+            pos4 = e.touches[0].clientY;
+        } else {
+            pos3 = e.clientX;
+            pos4 = e.clientY;
+        }
+        document.onmouseup = closeDragElement;
+        document.onmousemove = elementDrag;
+        document.ontouchend = closeDragElement;
+        document.ontouchmove = elementDrag;
+    }
+
+    function elementDrag(e) {
+        e = e || window.event;
+        e.preventDefault(); 
+        
+        const clientX = e.type === 'touchmove' ? e.touches[0].clientX : e.clientX;
+        const clientY = e.type === 'touchmove' ? e.touches[0].clientY : e.clientY;
+        
+        pos1 = pos3 - clientX;
+        pos2 = pos4 - clientY;
+        pos3 = clientX;
+        pos4 = clientY;
+        
+        const rect = elmnt.getBoundingClientRect();
+        elmnt.style.top = (rect.top - pos2) + "px";
+        elmnt.style.left = (rect.left - pos1) + "px";
+        
+        elmnt.style.bottom = "auto";
+        elmnt.style.right = "auto";
+    }
+
+    function closeDragElement() {
+        document.onmouseup = null;
+        document.onmousemove = null;
+        document.ontouchend = null;
+        document.ontouchmove = null;
+        
+        if (DISABLE_SCROLL_ON_DRAG) {
+            document.body.style.overflow = '';
+            document.body.style.touchAction = '';
+        }
+    }
 }
 
 // --- GESTURE LOGIC ---
 function handleSwipeGesture() {
     if (!ENABLE_MOBILE_SWIPE) return;
     
-    // Only run if study mode is currently active
     if (document.getElementById('studyActiveView').classList.contains('hidden')) return;
 
-    const swipeThreshold = 50; // Require a 50px drag to count as a swipe
+    const swipeThreshold = 50; 
     const distance = touchendX - touchstartX;
 
     if (distance < -swipeThreshold) {
-        // Swiped Left -> Go Next
         if (studyIndex < studyQueue.length - 1) {
             document.getElementById('studyNextBtn').click();
         } else {
             document.getElementById('studyNextWeekBtn').click();
         }
     } else if (distance > swipeThreshold) {
-        // Swiped Right -> Go Prev
         const prevBtn = document.getElementById('studyPrevBtn');
         if (!prevBtn.classList.contains('invisible')) {
             prevBtn.click();
@@ -297,9 +426,7 @@ function startStudyMode(week, startAtEnd = false) {
 }
 
 function renderStudyQuestion(index) {
-    // Determine the direction before updating the global index
     const isNext = index >= studyIndex;
-    
     studyIndex = index;
     const q = studyQueue[studyIndex];
     
@@ -307,8 +434,6 @@ function renderStudyQuestion(index) {
     document.getElementById('studyProgressText').innerText = `${weekLabel} - ${studyIndex + 1} / ${studyQueue.length}`;
     
     const container = document.getElementById('studyQuestionContainer');
-    
-    // Inject the inline animation style dynamically based on the direction
     container.innerHTML = `
         <div class="question-card" style="animation: ${isNext ? 'slideInRight 0.2s ease-out' : 'slideInLeft 0.2s ease-out'}">
             <div class="question-text">${q.question}</div>
