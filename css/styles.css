@@ -21,6 +21,11 @@ body {
     justify-content: center;
     height: 100vh;
     box-sizing: border-box;
+    overflow-x: hidden;
+    
+    /* NEW: Prevent accidental text highlighting everywhere */
+    -webkit-user-select: none; 
+    user-select: none; 
 }
 
 #app {
@@ -29,6 +34,7 @@ body {
     display: flex;
     flex-direction: column;
     height: 100%;
+    overflow-x: hidden; 
 }
 
 /* Permanent Title */
@@ -47,6 +53,7 @@ body {
     flex-direction: column;
     flex-grow: 1;
     overflow: hidden; 
+    touch-action: pan-y; 
 }
 
 .hub-layout {
@@ -57,6 +64,7 @@ body {
 .content-grow {
     flex-grow: 1;
     overflow-y: auto; 
+    overflow-x: hidden; 
     padding-bottom: 20px;
 }
 
@@ -198,8 +206,28 @@ h2 { text-align: center; margin-bottom: 15px; font-size: 1.2rem; }
     margin-bottom: 15px; color: var(--text-secondary); font-weight: bold;
     flex-shrink: 0;
 }
-.icon-btn { background: none; border: none; color: var(--text-secondary); font-size: 1.1rem; cursor: pointer; padding: 5px 0;}
-.icon-btn:hover { color: #fff; }
+
+/* UPDATED: Polished Back Icon Button */
+.icon-btn { 
+    background: transparent; 
+    border: none; 
+    color: var(--text-secondary); 
+    font-size: 1rem; 
+    font-weight: 600;
+    cursor: pointer; 
+    padding: 6px 12px 6px 6px; /* Extra padding on right for balance */
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    transition: all 0.2s ease;
+    margin-left: -6px; /* Pulls it flush with the left edge of the container */
+}
+.icon-btn:hover { 
+    color: var(--text-primary); 
+    background-color: rgba(255, 255, 255, 0.08); /* Subtle grey pill highlight */
+}
+
 .timer-text { font-family: monospace; font-size: 1.25rem; color: #fff; }
 
 .progress-text {
@@ -218,7 +246,12 @@ h2 { text-align: center; margin-bottom: 15px; font-size: 1.2rem; }
     gap: 15px; margin-bottom: 20px;
 }
 
-.question-text { font-size: 1.1rem; line-height: 1.5; font-weight: 500; margin-bottom: 20px;}
+/* NEW: Re-enable text selection ONLY for questions and answers */
+.question-text { 
+    font-size: 1.1rem; line-height: 1.5; font-weight: 500; margin-bottom: 20px;
+    -webkit-user-select: text; 
+    user-select: text;
+}
 .question-header .question-text { margin-bottom: 0; flex: 1; }
 
 .retry-tag {
@@ -232,6 +265,8 @@ h2 { text-align: center; margin-bottom: 15px; font-size: 1.2rem; }
     background-color: #2a2a2a; border: 2px solid transparent; border-radius: 8px;
     color: var(--text-primary); font-size: 1rem; cursor: pointer; transition: all 0.2s;
     box-sizing: border-box;
+    -webkit-user-select: text; 
+    user-select: text;
 }
 
 .option.study-correct { border-color: var(--accent-green); background-color: rgba(16, 185, 129, 0.15); }
@@ -271,7 +306,6 @@ h2 { text-align: center; margin-bottom: 15px; font-size: 1.2rem; }
     line-height: 1;
 }
 
-/* NEW: Fixes the weird bloated percentage sign */
 .percent-sign {
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     font-size: 0.7em; 
@@ -291,17 +325,15 @@ h2 { text-align: center; margin-bottom: 15px; font-size: 1.2rem; }
     border: 2px solid #333;
     border-radius: 8px;
     padding: 12px 18px;
-    min-width: 95px; /* Widened slightly for 'Week X' */
+    min-width: 95px; 
     text-align: center;
 }
 
-/* Muted Greyish-Red for below 70% */
 .week-stat-card.needs-review { 
     border-color: rgba(239, 68, 68, 0.4); 
     background-color: rgba(239, 68, 68, 0.12); 
 }
 
-/* Muted Greyish-Green for 100% */
 .week-stat-card.perfect { 
     border-color: rgba(16, 185, 129, 0.4); 
     background-color: rgba(16, 185, 129, 0.12); 
@@ -309,3 +341,14 @@ h2 { text-align: center; margin-bottom: 15px; font-size: 1.2rem; }
 
 .week-stat-title { font-size: 0.95rem; color: var(--text-secondary); font-family: monospace; margin-bottom: 5px; }
 .week-stat-score { font-size: 1.4rem; font-weight: bold; color: var(--text-primary); font-family: monospace;}
+
+/* --- INDUSTRY STANDARD SWIPE TRANSITIONS --- */
+@keyframes slideInRight {
+    0% { opacity: 0; transform: translateX(30px); }
+    100% { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes slideInLeft {
+    0% { opacity: 0; transform: translateX(-30px); }
+    100% { opacity: 1; transform: translateX(0); }
+}

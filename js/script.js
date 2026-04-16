@@ -1,3 +1,6 @@
+// --- DEVELOPER TOGGLES ---
+const ENABLE_MOBILE_SWIPE = true; // Set to false to disable swipe gestures in study mode
+
 // Data & State
 let rawData = [];
 let currentMode = 'study';
@@ -6,6 +9,7 @@ let currentMode = 'study';
 let studyQueue = [];
 let studyIndex = 0;
 let currentStudyWeek = null;
+let studyQueueCache = {}; 
 
 // Quiz State
 let quizWeeksSelected = new Set();
@@ -19,6 +23,10 @@ let originalQuizLength = 0;
 let wrongCount = 0;
 let totalAttempts = 0; 
 let weekStats = {}; 
+
+// Mobile Swipe State
+let touchstartX = 0;
+let touchendX = 0;
 
 // DOM Elements
 const mainHeader = document.getElementById('mainHeader'); 
@@ -58,7 +66,14 @@ function setupEventListeners() {
     document.getElementById('quizHomeBtn').addEventListener('click', returnToHub);
     document.getElementById('backFromResultsBtn').addEventListener('click', returnToHub);
 
-    document.getElementById('studyPrevBtn').addEventListener('click', () => renderStudyQuestion(studyIndex - 1));
+    document.getElementById('studyPrevBtn').addEventListener('click', () => {
+        if (studyIndex > 0) {
+            renderStudyQuestion(studyIndex - 1);
+        } else if (currentStudyWeek !== 'All' && currentStudyWeek > 0) {
+            startStudyMode(currentStudyWeek - 1, true);
+        }
+    });
+
     document.getElementById('studyNextBtn').addEventListener('click', () => renderStudyQuestion(studyIndex + 1));
     document.getElementById('studyRestartBtn').addEventListener('click', () => renderStudyQuestion(0));
     document.getElementById('studyNextWeekBtn').addEventListener('click', jumpToNextWeek);
@@ -66,20 +81,52 @@ function setupEventListeners() {
     document.getElementById('quizNextBtn').addEventListener('click', processQuizNext);
 
     document.addEventListener('keydown', handleKeyboardNavigation);
+
+    // Mobile Swipe Listeners
+    const studyView = document.getElementById('studyActiveView');
+    studyView.addEventListener('touchstart', e => {
+        touchstartX = e.changedTouches[0].screenX;
+    }, {passive: true});
+
+    studyView.addEventListener('touchend', e => {
+        touchendX = e.changedTouches[0].screenX;
+        handleSwipeGesture();
+    }, {passive: true});
 }
 
-// --- OPTION SHUFFLING LOGIC (ADVANCED PINNING) ---
-function getSmartShuffledOptions(options) {
-    // 1. Absolute Danger: References to specific letters. Shuffling breaks these completely.
-    const absoluteDangerPhrases = ["both a", "both b", "a and b", "b and c", "a & b", "neither a", "only a"];
+// --- GESTURE LOGIC ---
+function handleSwipeGesture() {
+    if (!ENABLE_MOBILE_SWIPE) return;
     
-    // 2. Collective Danger: References to the whole group ("All", "None"). These are safe to pin.
+    // Only run if study mode is currently active
+    if (document.getElementById('studyActiveView').classList.contains('hidden')) return;
+
+    const swipeThreshold = 50; // Require a 50px drag to count as a swipe
+    const distance = touchendX - touchstartX;
+
+    if (distance < -swipeThreshold) {
+        // Swiped Left -> Go Next
+        if (studyIndex < studyQueue.length - 1) {
+            document.getElementById('studyNextBtn').click();
+        } else {
+            document.getElementById('studyNextWeekBtn').click();
+        }
+    } else if (distance > swipeThreshold) {
+        // Swiped Right -> Go Prev
+        const prevBtn = document.getElementById('studyPrevBtn');
+        if (!prevBtn.classList.contains('invisible')) {
+            prevBtn.click();
+        }
+    }
+}
+
+// --- OPTION SHUFFLING LOGIC ---
+function getSmartShuffledOptions(options) {
+    const absoluteDangerPhrases = ["both a", "both b", "a and b", "b and c", "a & b", "neither a", "only a"];
     const collectiveDangerPhrases = ["all of", "none of"];
 
-    // Clean all options for checking
     const lowerOptions = options.map(opt => String(opt).toLowerCase().replace(/[.,;]$/, "").trim());
 
-    // Check for Absolute Danger first. If found, abort shuffle entirely.
     const hasAbsoluteDanger = lowerOptions.some(cleanOpt => 
         absoluteDangerPhrases.some(phrase => cleanOpt.includes(phrase))
     );
@@ -88,7 +135,6 @@ function getSmartShuffledOptions(options) {
         return [...options]; 
     }
 
-    // If safe to do a partial shuffle, separate the pinned options from the shufflable ones
     let fixedPositions = [];
     let shufflableOptions = [];
 
@@ -98,27 +144,23 @@ function getSmartShuffledOptions(options) {
                                    collectiveDangerPhrases.some(phrase => cleanOpt.includes(phrase));
 
         if (isCollectiveDanger) {
-            // Save exactly where this option is supposed to be
             fixedPositions.push({ index: index, text: opt });
         } else {
-            // Toss it into the random pile
             shufflableOptions.push(opt);
         }
     });
 
-    // Shuffle the safe options
     shufflableOptions.sort(() => Math.random() - 0.5);
 
-    // Reconstruct the array: put the pinned items back, and fill the gaps with shuffled items
     let result = [];
     let shuffleIndex = 0;
     
     for (let i = 0; i < options.length; i++) {
         let fixedOpt = fixedPositions.find(f => f.index === i);
         if (fixedOpt) {
-            result.push(fixedOpt.text); // Put the pinned item back in its exact original slot
+            result.push(fixedOpt.text); 
         } else {
-            result.push(shufflableOptions[shuffleIndex]); // Drop in a random item
+            result.push(shufflableOptions[shuffleIndex]); 
             shuffleIndex++;
         }
     }
@@ -144,8 +186,9 @@ function handleKeyboardNavigation(e) {
             }
         } else if (isPrev) {
             e.preventDefault();
-            if (studyIndex > 0) {
-                document.getElementById('studyPrevBtn').click();
+            const prevBtn = document.getElementById('studyPrevBtn');
+            if (!prevBtn.classList.contains('invisible')) {
+                prevBtn.click();
             }
         }
     } else if (isQuizActive) {
@@ -197,6 +240,7 @@ function renderGrid() {
 
 function handleGridClick(week) {
     if (currentMode === 'study') {
+        studyQueueCache = {}; 
         startStudyMode(week);
     } else {
         if (week === 'All') {
@@ -230,32 +274,43 @@ function returnToHub() {
 }
 
 // --- STUDY MODE ---
-function startStudyMode(week) {
+function startStudyMode(week, startAtEnd = false) {
     currentStudyWeek = week;
     
-    studyQueue = week === 'All' ? [...rawData] : rawData.filter(q => q.week === week);
-    if(studyQueue.length === 0) return;
-
-    if (sharedRandomizeCheck.checked) {
-        studyQueue.sort(() => Math.random() - 0.5);
+    if (!studyQueueCache[week]) {
+        let pool = week === 'All' ? [...rawData] : rawData.filter(q => q.week === week);
+        if (sharedRandomizeCheck.checked) {
+            pool.sort(() => Math.random() - 0.5);
+        }
+        studyQueueCache[week] = pool;
     }
+    
+    studyQueue = studyQueueCache[week];
+    if(studyQueue.length === 0) return;
     
     hubView.classList.add('hidden');
     mainHeader.classList.add('hidden'); 
     document.getElementById('studyActiveView').classList.remove('hidden');
-    renderStudyQuestion(0);
+    
+    const initialIndex = startAtEnd ? studyQueue.length - 1 : 0;
+    renderStudyQuestion(initialIndex);
 }
 
 function renderStudyQuestion(index) {
+    // Determine the direction before updating the global index
+    const isNext = index >= studyIndex;
+    
     studyIndex = index;
     const q = studyQueue[studyIndex];
     
-    const weekLabel = currentStudyWeek === 'All' ? 'All Weeks' : `Week ${currentStudyWeek}`;
+    const weekLabel = currentStudyWeek === 'All' ? `All Weeks [Week ${q.week}]` : `Week ${currentStudyWeek}`;
     document.getElementById('studyProgressText').innerText = `${weekLabel} - ${studyIndex + 1} / ${studyQueue.length}`;
     
     const container = document.getElementById('studyQuestionContainer');
+    
+    // Inject the inline animation style dynamically based on the direction
     container.innerHTML = `
-        <div class="question-card">
+        <div class="question-card" style="animation: ${isNext ? 'slideInRight 0.2s ease-out' : 'slideInLeft 0.2s ease-out'}">
             <div class="question-text">${q.question}</div>
             <div id="studyOptions"></div>
         </div>
@@ -283,7 +338,11 @@ function manageStudyButtons() {
     const nextWeekBtn = document.getElementById('studyNextWeekBtn');
 
     if (studyIndex === 0) {
-        prevBtn.classList.add('invisible');
+        if (currentStudyWeek !== 'All' && currentStudyWeek > 0) {
+            prevBtn.classList.remove('invisible');
+        } else {
+            prevBtn.classList.add('invisible');
+        }
     } else {
         prevBtn.classList.remove('invisible');
     }
@@ -467,18 +526,11 @@ function handleQuizSelection(selectedDiv, selectedText, correctAnswer) {
             isRetry: true
         };
 
-        // NEW: Shuffle the retry questions at the end of the deck
         if (sharedRandomizeCheck.checked) {
-            // Find where the retries start (either the next question or the end of the original deck)
             const retryStartIndex = Math.max(quizIndex + 1, originalQuizLength);
-            
-            // Pick a random spot in the retry section
             const randomInsertIndex = Math.floor(Math.random() * (quizQueue.length - retryStartIndex + 1)) + retryStartIndex;
-            
-            // Sneak the question into that random spot
             quizQueue.splice(randomInsertIndex, 0, retryQuestion);
         } else {
-            // If randomize is unchecked, just stick it at the very end
             quizQueue.push(retryQuestion);
         }
         
