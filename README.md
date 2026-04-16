@@ -1,1 +1,1 @@
-click the title 10 times if you're genz or something
+click the title 10 times if ur attention span is cooked
