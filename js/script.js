@@ -2,7 +2,7 @@
 const ENABLE_MOBILE_SWIPE = true; 
 const ENABLE_EASTER_EGG = true; 
 const DISABLE_SCROLL_ON_DRAG = true; 
-const VIDEO_SIZE_DIVISOR = 6; 
+const VIDEO_SIZE_DIVISOR = 3; 
 
 // Data & State
 let rawData = [];
@@ -153,7 +153,7 @@ function activateBrainrot() {
     
     if (!egg.classList.contains('hidden')) return;
 
-    showToast("Brainrot mode activated 🧠🛹");
+    showToast("Brainrot mode!");
     egg.classList.remove('hidden');
     vid.play(); 
 }
