@@ -330,14 +330,20 @@ function handleKeyboardNavigation(e) {
 
 // --- HUB LOGIC ---
 function switchModeUI() {
+    const studyInfoText = document.getElementById('studyInfoText');
+    const quizInfoText = document.getElementById('quizInfoText');
+
     if (currentMode === 'study') {
         hubInstructions.innerText = "Select a week to study:";
         quizStartContainer.classList.add('hidden');
-        redoWrongLabel.classList.add('hidden'); // Hide the toggle in study mode
+        redoWrongLabel.classList.add('hidden'); 
+        studyInfoText.classList.remove('hidden'); // Show blue study instructions
     } else {
         hubInstructions.innerText = "Select weeks for the quiz:";
         quizStartContainer.classList.remove('hidden');
-        redoWrongLabel.classList.remove('hidden'); // Show the toggle in quiz mode
+        redoWrongLabel.classList.remove('hidden'); 
+        studyInfoText.classList.add('hidden'); // Hide blue study instructions
+        quizInfoText.classList.remove('hidden'); // Show red quiz instructions
         quizWeeksSelected.clear();
         updateQuizStartBtn();
     }

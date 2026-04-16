@@ -440,3 +440,55 @@ h2 { text-align: center; margin-bottom: 15px; font-size: 1.2rem; }
         display: none !important;
     }
 }
+
+/* --- INSTRUCTION CALLOUTS & FOOTER --- */
+.mode-info {
+    font-size: 1.1rem; /* Perfectly matches the checkboxes */
+    width: 100%;
+    max-width: 340px; /* Slightly wider to fit the bigger text */
+    text-align: left;
+    margin-top: 15px; /* Added breathing room */
+}
+
+.mode-info ul {
+    margin: 0;
+    padding-left: 25px;
+}
+
+.mode-info li {
+    margin-bottom: 10px; /* Space between the bullet points */
+    line-height: 1.4;
+}
+
+.study-info {
+    color: var(--accent-blue);
+    opacity: 0.9;
+}
+
+.quiz-info {
+    color: var(--accent-red);
+    opacity: 0.9;
+    margin-top: 20px; /* Extra space below the start button */
+}
+
+.footer-link {
+    margin-top: auto; 
+    padding-top: 30px;
+    text-align: center;
+}
+
+.footer-link a {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    color: var(--text-secondary);
+    text-decoration: none;
+    font-size: 0.9rem;
+    transition: color 0.2s;
+}
+
+.footer-link a:hover {
+    color: var(--text-primary);
+}
+
