@@ -1,8 +1,8 @@
 // --- DEVELOPER TOGGLES ---
 const ENABLE_MOBILE_SWIPE = true; 
-const ENABLE_EASTER_EGG = true; // MASTER TOGGLE: Set to false to disable the entire feature completely
+const ENABLE_EASTER_EGG = true; 
 const DISABLE_SCROLL_ON_DRAG = true; 
-const VIDEO_SIZE_DIVISOR = 3; 
+const VIDEO_SIZE_DIVISOR = 6; 
 
 // Data & State
 let rawData = [];
@@ -42,6 +42,8 @@ const hubView = document.getElementById('hubView');
 const hubInstructions = document.getElementById('hubInstructions');
 const weekGrid = document.getElementById('weekGrid');
 const sharedRandomizeCheck = document.getElementById('sharedRandomizeCheck');
+const redoWrongLabel = document.getElementById('redoWrongLabel');
+const redoWrongCheck = document.getElementById('redoWrongCheck');
 const quizStartContainer = document.getElementById('quizStartContainer');
 const startQuizBtn = document.getElementById('startQuizBtn');
 const segmentContainer = document.getElementById('quizSegmentedProgress');
@@ -102,8 +104,8 @@ function setupEventListeners() {
 
     // --- EASTER EGG RAPID CLICK LISTENER ---
     document.getElementById('secretTriggerTitle').addEventListener('click', () => {
-        if (!ENABLE_EASTER_EGG) return; // Master Lock
-        if (window.innerWidth > 768) return; // Desktop Lock
+        if (!ENABLE_EASTER_EGG) return; 
+        if (window.innerWidth > 768) return; 
 
         titleClickCount++;
         clearTimeout(titleClickTimer); 
@@ -127,26 +129,21 @@ function setupEventListeners() {
 
 // --- EASTER EGG LOGIC ---
 function showToast(message) {
-    // 1. Destroy any existing toast so they don't stack
     const existingToast = document.getElementById('dynamicToast');
     if (existingToast) existingToast.remove();
 
-    // 2. Create the element purely in JavaScript
     const toast = document.createElement('div');
     toast.id = 'dynamicToast';
     toast.innerText = message;
     
-    // 3. Attach it to the body (outside the #app layout)
     document.body.appendChild(toast);
 
-    // 4. Force browser reflow to ensure the CSS animation triggers
     void toast.offsetWidth;
     toast.classList.add('show');
     
-    // 5. Clean it up automatically after 3 seconds
     setTimeout(() => {
         toast.classList.remove('show');
-        setTimeout(() => toast.remove(), 300); // Wait for fade-out before deleting
+        setTimeout(() => toast.remove(), 300); 
     }, 3000);
 }
 
@@ -156,7 +153,7 @@ function activateBrainrot() {
     
     if (!egg.classList.contains('hidden')) return;
 
-    showToast("Brainrot mode!");
+    showToast("Brainrot mode activated 🧠🛹");
     egg.classList.remove('hidden');
     vid.play(); 
 }
@@ -336,9 +333,11 @@ function switchModeUI() {
     if (currentMode === 'study') {
         hubInstructions.innerText = "Select a week to study:";
         quizStartContainer.classList.add('hidden');
+        redoWrongLabel.classList.add('hidden'); // Hide the toggle in study mode
     } else {
         hubInstructions.innerText = "Select weeks for the quiz:";
         quizStartContainer.classList.remove('hidden');
+        redoWrongLabel.classList.remove('hidden'); // Show the toggle in quiz mode
         quizWeeksSelected.clear();
         updateQuizStartBtn();
     }
@@ -646,20 +645,23 @@ function handleQuizSelection(selectedDiv, selectedText, correctAnswer) {
             }
         });
 
-        const retryQuestion = {
-            ...currentQ,
-            isRetry: true
-        };
+        // NEW: Check if the user wants to redo wrong answers
+        if (redoWrongCheck.checked) {
+            const retryQuestion = {
+                ...currentQ,
+                isRetry: true
+            };
 
-        if (sharedRandomizeCheck.checked) {
-            const retryStartIndex = Math.max(quizIndex + 1, originalQuizLength);
-            const randomInsertIndex = Math.floor(Math.random() * (quizQueue.length - retryStartIndex + 1)) + retryStartIndex;
-            quizQueue.splice(randomInsertIndex, 0, retryQuestion);
-        } else {
-            quizQueue.push(retryQuestion);
+            if (sharedRandomizeCheck.checked) {
+                const retryStartIndex = Math.max(quizIndex + 1, originalQuizLength);
+                const randomInsertIndex = Math.floor(Math.random() * (quizQueue.length - retryStartIndex + 1)) + retryStartIndex;
+                quizQueue.splice(randomInsertIndex, 0, retryQuestion);
+            } else {
+                quizQueue.push(retryQuestion);
+            }
+            
+            wrongCount++; // Only increment this if we actually pushed a retry question
         }
-        
-        wrongCount++;
 
         const nextBtn = document.getElementById('quizNextBtn');
         nextBtn.innerText = 'NEXT'; 
@@ -681,7 +683,17 @@ function showQuizResults() {
     document.getElementById('quizActiveView').classList.add('hidden');
     document.getElementById('quizResultsView').classList.remove('hidden');
 
-    const percentage = Math.round((originalQuizLength / totalAttempts) * 100);
+    // NEW: Smart accuracy math based on the retry setting
+    let percentage;
+    if (redoWrongCheck.checked) {
+        // If retries are on, perfect score = (Total Questions / Total Attempts)
+        percentage = Math.round((originalQuizLength / totalAttempts) * 100);
+    } else {
+        // If retries are off, score = (Total Correct First Try / Total Questions)
+        let totalCorrectFirstTry = 0;
+        Object.values(weekStats).forEach(stat => totalCorrectFirstTry += stat.correct);
+        percentage = Math.round((totalCorrectFirstTry / originalQuizLength) * 100);
+    }
     
     document.getElementById('scoreDisplay').innerHTML = `${percentage}<span class="percent-sign">%</span>`;
     document.getElementById('finalTimeText').innerText = formatTime(secondsElapsed);

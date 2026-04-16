@@ -35,10 +35,14 @@
         
         <div class="grid" id="weekGrid"></div>
 
-        <div class="hub-settings">
+        <div class="hub-settings" style="flex-direction: column !important; gap: 15px;">
             <label class="custom-checkbox">
                 <input type="checkbox" id="sharedRandomizeCheck">
                 Randomize Questions
+            </label>
+            <label class="custom-checkbox hidden" id="redoWrongLabel">
+                <input type="checkbox" id="redoWrongCheck" checked>
+                Redo wrong answers at the end
             </label>
         </div>
 

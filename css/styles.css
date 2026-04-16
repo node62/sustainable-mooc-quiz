@@ -118,10 +118,12 @@ h2 { text-align: center; margin-bottom: 15px; font-size: 1.2rem; }
     background-color: rgba(239, 68, 68, 0.1); border-color: var(--accent-red); color: var(--accent-red);
 }
 
-/* Hub Settings */
+/* Hub Settings - Locked to Two Rows for ALL Devices */
 .hub-settings {
     display: flex;
-    justify-content: center;
+    flex-direction: column !important; /* The !important forces it to stack everywhere */
+    align-items: center;
+    gap: 12px;
     margin-bottom: 20px;
     width: 100%;
 }
