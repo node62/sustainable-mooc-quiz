@@ -63,6 +63,7 @@ async function init() {
 }
 
 function setupEventListeners() {
+    // Mode Toggles (Study vs Quiz)
     modeRadios.forEach(radio => {
         radio.addEventListener('change', (e) => {
             currentMode = e.target.value;
@@ -70,12 +71,15 @@ function setupEventListeners() {
         });
     });
 
+    // Main Start Button
     startQuizBtn.addEventListener('click', startQuiz);
     
+    // Back to Hub Buttons
     document.getElementById('studyHomeBtn').addEventListener('click', returnToHub);
     document.getElementById('quizHomeBtn').addEventListener('click', returnToHub);
     document.getElementById('backFromResultsBtn').addEventListener('click', returnToHub);
 
+    // Study Mode Navigation
     document.getElementById('studyPrevBtn').addEventListener('click', () => {
         if (studyIndex > 0) {
             renderStudyQuestion(studyIndex - 1);
@@ -83,29 +87,30 @@ function setupEventListeners() {
             startStudyMode(currentStudyWeek - 1, true);
         }
     });
-
     document.getElementById('studyNextBtn').addEventListener('click', () => renderStudyQuestion(studyIndex + 1));
     document.getElementById('studyRestartBtn').addEventListener('click', () => renderStudyQuestion(0));
     document.getElementById('studyNextWeekBtn').addEventListener('click', jumpToNextWeek);
 
+    // Quiz Mode Navigation
     document.getElementById('quizNextBtn').addEventListener('click', processQuizNext);
 
+    // Keyboard Arrow/Space Navigation
     document.addEventListener('keydown', handleKeyboardNavigation);
 
+    // --- MOBILE SWIPE LISTENERS (Attached to BOTH views) ---
     const studyView = document.getElementById('studyActiveView');
-    studyView.addEventListener('touchstart', e => {
-        touchstartX = e.changedTouches[0].screenX;
-    }, {passive: true});
+    const quizView = document.getElementById('quizActiveView');
 
-    studyView.addEventListener('touchend', e => {
-        touchendX = e.changedTouches[0].screenX;
-        handleSwipeGesture();
-    }, {passive: true});
+    studyView.addEventListener('touchstart', e => { touchstartX = e.changedTouches[0].screenX; }, {passive: true});
+    studyView.addEventListener('touchend', e => { touchendX = e.changedTouches[0].screenX; handleSwipeGesture(); }, {passive: true});
+
+    quizView.addEventListener('touchstart', e => { touchstartX = e.changedTouches[0].screenX; }, {passive: true});
+    quizView.addEventListener('touchend', e => { touchendX = e.changedTouches[0].screenX; handleSwipeGesture(); }, {passive: true});
 
     // --- EASTER EGG RAPID CLICK LISTENER ---
     document.getElementById('secretTriggerTitle').addEventListener('click', () => {
-        if (!ENABLE_EASTER_EGG) return; 
-        if (window.innerWidth > 768) return; 
+        if (!ENABLE_EASTER_EGG) return; // Master Lock
+        if (window.innerWidth > 768) return; // Desktop Lock
 
         titleClickCount++;
         clearTimeout(titleClickTimer); 
@@ -118,6 +123,7 @@ function setupEventListeners() {
         }
     });
 
+    // Easter Egg Close Button
     document.getElementById('closeEasterEgg').addEventListener('click', (e) => {
         e.stopPropagation(); 
         const egg = document.getElementById('easterEggContainer');
@@ -227,22 +233,37 @@ function initEasterEgg() {
 function handleSwipeGesture() {
     if (!ENABLE_MOBILE_SWIPE) return;
     
-    if (document.getElementById('studyActiveView').classList.contains('hidden')) return;
+    const isStudyActive = !document.getElementById('studyActiveView').classList.contains('hidden');
+    const isQuizActive = !document.getElementById('quizActiveView').classList.contains('hidden');
 
     const swipeThreshold = 50; 
     const distance = touchendX - touchstartX;
 
     if (distance < -swipeThreshold) {
-        if (studyIndex < studyQueue.length - 1) {
-            document.getElementById('studyNextBtn').click();
-        } else {
-            document.getElementById('studyNextWeekBtn').click();
+        // SWIPED LEFT (NEXT)
+        if (isStudyActive) {
+            if (studyIndex < studyQueue.length - 1) {
+                document.getElementById('studyNextBtn').click();
+            } else {
+                document.getElementById('studyNextWeekBtn').click();
+            }
+        } else if (isQuizActive) {
+            const nextBtn = document.getElementById('quizNextBtn');
+            // Only swipe next if they actually answered the question and the button is visible
+            if (!nextBtn.classList.contains('locked-hidden')) {
+                nextBtn.click();
+            }
         }
     } else if (distance > swipeThreshold) {
-        const prevBtn = document.getElementById('studyPrevBtn');
-        if (!prevBtn.classList.contains('invisible')) {
-            prevBtn.click();
+        // SWIPED RIGHT (PREVIOUS)
+        if (isStudyActive) {
+            const prevBtn = document.getElementById('studyPrevBtn');
+            if (!prevBtn.classList.contains('invisible')) {
+                prevBtn.click();
+            }
         }
+        // Notice there is no 'else if (isQuizActive)' here. 
+        // If they swipe right in quiz mode, the code literally does nothing!
     }
 }
 
@@ -252,6 +273,14 @@ function getSmartShuffledOptions(options) {
     const collectiveDangerPhrases = ["all of", "none of"];
 
     const lowerOptions = options.map(opt => String(opt).toLowerCase().replace(/[.,;]$/, "").trim());
+
+    // NEW: True/False Interceptor
+    // If it's a 2-option question and contains True and False, force True to be first.
+    if (options.length === 2 && lowerOptions.includes("true") && lowerOptions.includes("false")) {
+        const trueOpt = options.find((o, i) => lowerOptions[i] === "true");
+        const falseOpt = options.find((o, i) => lowerOptions[i] === "false");
+        return [trueOpt, falseOpt];
+    }
 
     const hasAbsoluteDanger = lowerOptions.some(cleanOpt => 
         absoluteDangerPhrases.some(phrase => cleanOpt.includes(phrase))
@@ -448,7 +477,7 @@ function renderStudyQuestion(index) {
 
     const optsContainer = document.getElementById('studyOptions');
     
-    const displayOptions = getSmartShuffledOptions(q.options);
+    const displayOptions = q.options;    
     
     displayOptions.forEach(opt => {
         const isCorrect = opt === q.answer;
