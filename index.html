@@ -29,22 +29,28 @@
             <div class="slider"></div>
         </div>
     </div>
-    <!-- ---------------------------------------------------------------------------------------- -->
+
     <div id="hubView" class="view-container hub-layout">
         <h2 id="hubInstructions">Select a week to study:</h2>
         
         <div class="grid" id="weekGrid"></div>
 
         <div class="hub-settings" style="flex-direction: column !important; gap: 15px;">
-            <label class="custom-checkbox">
-                <input type="checkbox" id="sharedRandomizeCheck">
+            
+            <label class="custom-checkbox" id="studyRandomizeLabel">
+                <input type="checkbox" id="studyRandomizeCheck">
+                Randomize Questions
+            </label>
+
+            <label class="custom-checkbox hidden" id="quizRandomizeLabel">
+                <input type="checkbox" id="quizRandomizeCheck" checked>
                 Randomize Questions
             </label>
             
             <div id="studyInfoText" class="mode-info study-info">
                 <ul>
-                    <li>These are all the assignment answers for a quick review.</li>
-                    <li>On phone, you can also swipe the card left or right to navigate.</li>
+                    <li>Review all questions and answers together.</li>
+                    <li>Swipe left or right to change cards on mobile.</li>
                 </ul>
             </div>
 
@@ -59,8 +65,8 @@
             
             <div id="quizInfoText" class="mode-info quiz-info hidden">
                 <ul>
-                    <li>You can select multiple weeks together.</li>
-                    <li>Wrong answers will reappear at the end (unless turned off from above).</li>
+                    <li>Pick one or more weeks to test yourself.</li>
+                    <li>Missed questions will reappear at the end (unless turned off above).</li>
                 </ul>
             </div>
         </div>

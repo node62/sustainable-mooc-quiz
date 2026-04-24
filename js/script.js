@@ -2,7 +2,7 @@
 const ENABLE_MOBILE_SWIPE = true; 
 const ENABLE_EASTER_EGG = true; 
 const DISABLE_SCROLL_ON_DRAG = true; 
-const VIDEO_SIZE_DIVISOR = 3; 
+const VIDEO_SIZE_DIVISOR = 6; 
 
 // Data & State
 let rawData = [];
@@ -41,7 +41,13 @@ const modeRadios = document.getElementsByName('modeToggle');
 const hubView = document.getElementById('hubView');
 const hubInstructions = document.getElementById('hubInstructions');
 const weekGrid = document.getElementById('weekGrid');
-const sharedRandomizeCheck = document.getElementById('sharedRandomizeCheck');
+
+// NEW: Decoupled Checkboxes
+const studyRandomizeLabel = document.getElementById('studyRandomizeLabel');
+const studyRandomizeCheck = document.getElementById('studyRandomizeCheck');
+const quizRandomizeLabel = document.getElementById('quizRandomizeLabel');
+const quizRandomizeCheck = document.getElementById('quizRandomizeCheck');
+
 const redoWrongLabel = document.getElementById('redoWrongLabel');
 const redoWrongCheck = document.getElementById('redoWrongCheck');
 const quizStartContainer = document.getElementById('quizStartContainer');
@@ -51,7 +57,7 @@ const segmentContainer = document.getElementById('quizSegmentedProgress');
 // Init
 async function init() {
     try {
-        const response = await fetch('./data/questions.json');
+        const response = await fetch('./data/questions.json?v=' + new Date().getTime());
         if (!response.ok) throw new Error("HTTP Status " + response.status);
         rawData = await response.json();
         setupEventListeners();
@@ -63,7 +69,6 @@ async function init() {
 }
 
 function setupEventListeners() {
-    // Mode Toggles (Study vs Quiz)
     modeRadios.forEach(radio => {
         radio.addEventListener('change', (e) => {
             currentMode = e.target.value;
@@ -71,15 +76,12 @@ function setupEventListeners() {
         });
     });
 
-    // Main Start Button
     startQuizBtn.addEventListener('click', startQuiz);
     
-    // Back to Hub Buttons
     document.getElementById('studyHomeBtn').addEventListener('click', returnToHub);
     document.getElementById('quizHomeBtn').addEventListener('click', returnToHub);
     document.getElementById('backFromResultsBtn').addEventListener('click', returnToHub);
 
-    // Study Mode Navigation
     document.getElementById('studyPrevBtn').addEventListener('click', () => {
         if (studyIndex > 0) {
             renderStudyQuestion(studyIndex - 1);
@@ -87,17 +89,15 @@ function setupEventListeners() {
             startStudyMode(currentStudyWeek - 1, true);
         }
     });
+
     document.getElementById('studyNextBtn').addEventListener('click', () => renderStudyQuestion(studyIndex + 1));
     document.getElementById('studyRestartBtn').addEventListener('click', () => renderStudyQuestion(0));
     document.getElementById('studyNextWeekBtn').addEventListener('click', jumpToNextWeek);
 
-    // Quiz Mode Navigation
     document.getElementById('quizNextBtn').addEventListener('click', processQuizNext);
 
-    // Keyboard Arrow/Space Navigation
     document.addEventListener('keydown', handleKeyboardNavigation);
 
-    // --- MOBILE SWIPE LISTENERS (Attached to BOTH views) ---
     const studyView = document.getElementById('studyActiveView');
     const quizView = document.getElementById('quizActiveView');
 
@@ -107,10 +107,9 @@ function setupEventListeners() {
     quizView.addEventListener('touchstart', e => { touchstartX = e.changedTouches[0].screenX; }, {passive: true});
     quizView.addEventListener('touchend', e => { touchendX = e.changedTouches[0].screenX; handleSwipeGesture(); }, {passive: true});
 
-    // --- EASTER EGG RAPID CLICK LISTENER ---
     document.getElementById('secretTriggerTitle').addEventListener('click', () => {
-        if (!ENABLE_EASTER_EGG) return; // Master Lock
-        if (window.innerWidth > 768) return; // Desktop Lock
+        if (!ENABLE_EASTER_EGG) return; 
+        if (window.innerWidth > 768) return; 
 
         titleClickCount++;
         clearTimeout(titleClickTimer); 
@@ -123,7 +122,6 @@ function setupEventListeners() {
         }
     });
 
-    // Easter Egg Close Button
     document.getElementById('closeEasterEgg').addEventListener('click', (e) => {
         e.stopPropagation(); 
         const egg = document.getElementById('easterEggContainer');
@@ -133,7 +131,6 @@ function setupEventListeners() {
     });
 }
 
-// --- EASTER EGG LOGIC ---
 function showToast(message) {
     const existingToast = document.getElementById('dynamicToast');
     if (existingToast) existingToast.remove();
@@ -159,7 +156,7 @@ function activateBrainrot() {
     
     if (!egg.classList.contains('hidden')) return;
 
-    showToast("Brainrot mode!");
+    showToast("Brainrot mode activated 🧠🛹");
     egg.classList.remove('hidden');
     vid.play(); 
 }
@@ -229,7 +226,6 @@ function initEasterEgg() {
     }
 }
 
-// --- GESTURE LOGIC ---
 function handleSwipeGesture() {
     if (!ENABLE_MOBILE_SWIPE) return;
     
@@ -240,7 +236,6 @@ function handleSwipeGesture() {
     const distance = touchendX - touchstartX;
 
     if (distance < -swipeThreshold) {
-        // SWIPED LEFT (NEXT)
         if (isStudyActive) {
             if (studyIndex < studyQueue.length - 1) {
                 document.getElementById('studyNextBtn').click();
@@ -249,33 +244,26 @@ function handleSwipeGesture() {
             }
         } else if (isQuizActive) {
             const nextBtn = document.getElementById('quizNextBtn');
-            // Only swipe next if they actually answered the question and the button is visible
             if (!nextBtn.classList.contains('locked-hidden')) {
                 nextBtn.click();
             }
         }
     } else if (distance > swipeThreshold) {
-        // SWIPED RIGHT (PREVIOUS)
         if (isStudyActive) {
             const prevBtn = document.getElementById('studyPrevBtn');
             if (!prevBtn.classList.contains('invisible')) {
                 prevBtn.click();
             }
         }
-        // Notice there is no 'else if (isQuizActive)' here. 
-        // If they swipe right in quiz mode, the code literally does nothing!
     }
 }
 
-// --- OPTION SHUFFLING LOGIC ---
 function getSmartShuffledOptions(options) {
     const absoluteDangerPhrases = ["both a", "both b", "a and b", "b and c", "a & b", "neither a", "only a"];
     const collectiveDangerPhrases = ["all of", "none of"];
 
     const lowerOptions = options.map(opt => String(opt).toLowerCase().replace(/[.,;]$/, "").trim());
 
-    // NEW: True/False Interceptor
-    // If it's a 2-option question and contains True and False, force True to be first.
     if (options.length === 2 && lowerOptions.includes("true") && lowerOptions.includes("false")) {
         const trueOpt = options.find((o, i) => lowerOptions[i] === "true");
         const falseOpt = options.find((o, i) => lowerOptions[i] === "false");
@@ -323,7 +311,6 @@ function getSmartShuffledOptions(options) {
     return result;
 }
 
-// --- KEYBOARD LOGIC ---
 function handleKeyboardNavigation(e) {
     const isStudyActive = !document.getElementById('studyActiveView').classList.contains('hidden');
     const isQuizActive = !document.getElementById('quizActiveView').classList.contains('hidden');
@@ -357,7 +344,6 @@ function handleKeyboardNavigation(e) {
     }
 }
 
-// --- HUB LOGIC ---
 function switchModeUI() {
     const studyInfoText = document.getElementById('studyInfoText');
     const quizInfoText = document.getElementById('quizInfoText');
@@ -366,13 +352,19 @@ function switchModeUI() {
         hubInstructions.innerText = "Select a week to study:";
         quizStartContainer.classList.add('hidden');
         redoWrongLabel.classList.add('hidden'); 
-        studyInfoText.classList.remove('hidden'); // Show blue study instructions
+        quizRandomizeLabel.classList.add('hidden'); 
+        
+        studyRandomizeLabel.classList.remove('hidden'); 
+        studyInfoText.classList.remove('hidden'); 
     } else {
         hubInstructions.innerText = "Select weeks for the quiz:";
         quizStartContainer.classList.remove('hidden');
         redoWrongLabel.classList.remove('hidden'); 
-        studyInfoText.classList.add('hidden'); // Hide blue study instructions
-        quizInfoText.classList.remove('hidden'); // Show red quiz instructions
+        studyRandomizeLabel.classList.add('hidden'); 
+        
+        quizRandomizeLabel.classList.remove('hidden'); 
+        studyInfoText.classList.add('hidden'); 
+        quizInfoText.classList.remove('hidden'); 
         quizWeeksSelected.clear();
         updateQuizStartBtn();
     }
@@ -436,13 +428,13 @@ function returnToHub() {
     mainHeader.classList.remove('hidden'); 
 }
 
-// --- STUDY MODE ---
 function startStudyMode(week, startAtEnd = false) {
     currentStudyWeek = week;
     
     if (!studyQueueCache[week]) {
         let pool = week === 'All' ? [...rawData] : rawData.filter(q => q.week === week);
-        if (sharedRandomizeCheck.checked) {
+        // Uses Study Checkbox
+        if (studyRandomizeCheck.checked) {
             pool.sort(() => Math.random() - 0.5);
         }
         studyQueueCache[week] = pool;
@@ -477,10 +469,11 @@ function renderStudyQuestion(index) {
 
     const optsContainer = document.getElementById('studyOptions');
     
-    const displayOptions = q.options;    
+    // Study mode strictly uses the original JSON order, no shuffling
+    const displayOptions = q.options; 
     
     displayOptions.forEach(opt => {
-        const isCorrect = opt === q.answer;
+        const isCorrect = String(opt).trim() === String(q.answer).trim();
         const btn = document.createElement('div');
         btn.className = `option ${isCorrect ? 'study-correct' : ''}`;
         btn.innerText = opt;
@@ -529,7 +522,6 @@ function jumpToNextWeek() {
     }
 }
 
-// --- QUIZ MODE ---
 function formatTime(secs) {
     const m = Math.floor(secs / 60).toString().padStart(2, '0');
     const s = (secs % 60).toString().padStart(2, '0');
@@ -556,7 +548,8 @@ function startQuiz() {
         ? [...rawData] 
         : rawData.filter(q => quizWeeksSelected.has(q.week));
 
-    if (sharedRandomizeCheck.checked) {
+    // Uses Quiz Checkbox
+    if (quizRandomizeCheck.checked) {
         pool.sort(() => Math.random() - 0.5);
     }
 
@@ -608,8 +601,6 @@ function renderQuizQuestion() {
     nextBtn.classList.add('locked-hidden'); 
     nextBtn.innerText = quizIndex === quizQueue.length - 1 ? 'Finish Quiz' : 'NEXT';
 
-    let retryBadge = q.isRetry ? `<span class="retry-tag">RETRY</span>` : '';
-
     const container = document.getElementById('quizQuestionContainer');
     
     if (q.isRetry) {
@@ -654,7 +645,7 @@ function handleQuizSelection(selectedDiv, selectedText, correctAnswer) {
     const currentQ = quizQueue[quizIndex];
     const seg = document.getElementById(`segment-${currentQ.originalIndex}`);
 
-    if (selectedText === correctAnswer) {
+    if (String(selectedText).trim() === String(correctAnswer).trim()) {
         selectedDiv.classList.add('quiz-correct');
         
         seg.classList.remove('wrong');
@@ -675,19 +666,19 @@ function handleQuizSelection(selectedDiv, selectedText, correctAnswer) {
         seg.classList.add('wrong');
         
         Array.from(optsContainer.children).forEach(child => {
-            if (child.innerText === correctAnswer) {
+            if (String(child.innerText).trim() === String(correctAnswer).trim()) {
                 child.classList.add('quiz-correct');
             }
         });
 
-        // NEW: Check if the user wants to redo wrong answers
         if (redoWrongCheck.checked) {
             const retryQuestion = {
                 ...currentQ,
                 isRetry: true
             };
 
-            if (sharedRandomizeCheck.checked) {
+            // Uses Quiz Checkbox for inserting retries
+            if (quizRandomizeCheck.checked) {
                 const retryStartIndex = Math.max(quizIndex + 1, originalQuizLength);
                 const randomInsertIndex = Math.floor(Math.random() * (quizQueue.length - retryStartIndex + 1)) + retryStartIndex;
                 quizQueue.splice(randomInsertIndex, 0, retryQuestion);
@@ -695,7 +686,7 @@ function handleQuizSelection(selectedDiv, selectedText, correctAnswer) {
                 quizQueue.push(retryQuestion);
             }
             
-            wrongCount++; // Only increment this if we actually pushed a retry question
+            wrongCount++; 
         }
 
         const nextBtn = document.getElementById('quizNextBtn');
@@ -718,13 +709,10 @@ function showQuizResults() {
     document.getElementById('quizActiveView').classList.add('hidden');
     document.getElementById('quizResultsView').classList.remove('hidden');
 
-    // NEW: Smart accuracy math based on the retry setting
     let percentage;
     if (redoWrongCheck.checked) {
-        // If retries are on, perfect score = (Total Questions / Total Attempts)
         percentage = Math.round((originalQuizLength / totalAttempts) * 100);
     } else {
-        // If retries are off, score = (Total Correct First Try / Total Questions)
         let totalCorrectFirstTry = 0;
         Object.values(weekStats).forEach(stat => totalCorrectFirstTry += stat.correct);
         percentage = Math.round((totalCorrectFirstTry / originalQuizLength) * 100);
