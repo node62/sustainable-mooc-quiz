@@ -2,7 +2,7 @@
 const ENABLE_MOBILE_SWIPE = true; 
 const ENABLE_EASTER_EGG = true; 
 const DISABLE_SCROLL_ON_DRAG = true; 
-const VIDEO_SIZE_DIVISOR = 6; 
+const VIDEO_SIZE_DIVISOR = 4; 
 
 // Data & State
 let rawData = [];
